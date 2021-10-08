@@ -1,0 +1,14 @@
+version: "3"
+services:
+  telldus-core-mqtt:
+    image: telldus-core-mqtt:latest
+    container_name: telldus-core-mqtt
+    restart: unless-stopped
+    environment:
+      - TDM_MQTT_SERVER=localhost
+      - TDM_MQTT_USER=telldus-core-mqtt
+      - TDM_MQTT_PASS=telldus-core-mqtt
+    devices:
+      - /dev/bus/usb:/dev/bus/usb:rwm
+    volumes:
+      - ./tellstick.conf:/etc/tellstick.conf:ro

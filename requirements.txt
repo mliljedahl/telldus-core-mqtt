@@ -1,0 +1,5 @@
+asyncio==3.4.3
+paho-mqtt==1.5.1
+pyaml-env==1.1.1
+PyYAML==5.4.1
+tellcore-py==1.1.3

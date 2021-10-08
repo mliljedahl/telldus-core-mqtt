@@ -1,0 +1,22 @@
+# Docker
+.docker
+
+# Editors
+.vscode
+*.swp
+*/*.swp
+*/*/*.swp
+*/*/*/*.swp
+
+# Virtual environment
+.env/
+.venv/
+env/
+venv/
+src/env/
+src/venv/
+
+# Python
+src/__pycache__/
+src/*.py[cod]
+src/*$py.class

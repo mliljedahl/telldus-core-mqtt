@@ -1,0 +1,12 @@
+home_assistant:
+  config_topic: !ENV ${TDM_BASE_TOPIC:homeassistant}
+  state_topic: !ENV ${TDM_STATE_TOPIC:telldus}
+
+telldus:
+  repeat_cmd: !ENV ${TDM_REPEAT_CMD:5}
+
+mqtt:
+  broker: !ENV ${TDM_MQTT_SERVER:127.0.0.1}
+  port: !ENV ${TDM_MQTT_PORT:1883}
+  user: !ENV ${TDM_MQTT_USER:telldus-core-mqtt}
+  pass: !ENV ${TDM_MQTT_PASS:telldus-core-mqtt}

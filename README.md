@@ -41,8 +41,8 @@ Here is an example using docker-compose.yml:
 
 ```
   telldus-core-mqtt:
-    image: telldus-core-mqtt:1.0.0
-    container_name: mliljedahl/telldus-core-mqtt
+    image: mliljedahl/telldus-core-mqtt:1.0.0
+    container_name: telldus-core-mqtt
     restart: unless-stopped
     environment:
       - TDM_MQTT_SERVER=localhost

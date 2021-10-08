@@ -8,14 +8,61 @@ For now sensors and on/off switches are supported, see [Known limitations](#Know
 
 It is possible to either use the `config_default.yaml` file or set the config parameters found in the file as environment variables. If the environment variables are not found the values from `config_default.yaml` are used.
 
+### Environment Variables
+
+**`TDM_BASE_TOPIC`**
+The MQTT base topic to post to. Default: `homeassistant`
+
+**`TDM_STATE_TOPIC`**
+The MQTT state topic to post to. Default: `telldus`
+
+**`TDM_REPEAT_CMD`**
+Number of times to repeat all telldus commands since it is not possible to know if the command was received or not. Default: `5`
+
+**`TDM_MQTT_SERVER`**
+Hostname or IP address of the MQTT server. Default: `localhost`
+
+**`TDM_MQTT_PORT`**
+Port number that the MQTT server is listening on. Default: `1883`
+
+**`TDM_MQTT_USER`**
+Username for authentication to MQTT server. Default: `telldus-core-mqtt`
+
+**`TDM_MQTT_PASS`**
+Password for authentication to MQTT server. Default: `telldus-core-mqtt`
+
 ## Installation
 
 Best option is to run the `docker-compose.yaml` file. Else install it along side `telldus-core` in a python virtual environment, required packages are found in `requirements.txt`.
 
 ### Docker Compose
 
+Here is an example using docker-compose.yml:
+
+```
+  telldus-core-mqtt:
+    image: telldus-core-mqtt:1.0.0
+    container_name: telldus-core-mqtt
+    restart: unless-stopped
+    environment:
+      - TDM_MQTT_SERVER=localhost
+      - TDM_MQTT_USER=telldus-core-mqtt
+      - TDM_MQTT_PASS=telldus-core-mqtt
+    devices:
+      - /dev/bus/usb:/dev/bus/usb:rwm
+    volumes:
+      - ./tellstick.conf:/etc/tellstick.conf:ro
+```
+
+Running docker compose
 ```
 $ docker-compose up -d
+```
+
+### Docker run
+
+```
+$ docker run --name telldus-core-mqtt -e TDM_MQTT_SERVER=localhost -e TDM_MQTT_USER=telldus-core-mqtt -e TDM_MQTT_PASS=telldus-core-mqtt -v ./tellstick.conf:/etc/tellstick.conf:ro --device=/dev/bus/usb:/dev/bus/usb:rwm -d telldus-core-mqtt:1.0.0
 ```
 
 ### Python virtual environment
@@ -34,7 +81,6 @@ The following are the known limitations.
 * telldus-core do not compile in alpine linux 3.14.
 * The only sensors that have been tested are the temperature and humidity sensors. As for devices only on/off switches have been tested.
 * Tested with a TellStick Duo, might also work with the TellStick or other controllers supported by telldus-core.
-* Tests are missing.
 
 ## Development
 

@@ -86,4 +86,4 @@ Please report bugs in the [issue tracker](https://github.com/mliljedahl/telldus-
 
 ## License
 
-Distributed under the Apache 2.0 License. See [LICENSE](https://github.com/mliljedahl/telldus-core-mqtt/LICENSE) for more information.
+Distributed under the Apache 2.0 License. See [LICENSE](https://github.com/mliljedahl/telldus-core-mqtt/blob/master/LICENSE) for more information.

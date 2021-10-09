@@ -190,7 +190,7 @@ class Sensor(Telldus):
         for s in self.core.sensors():
             if str(s.id) == sensor:
                 return s
-        logging.warning("Device '{}' not found".format(sensor))
+        logging.warning("Sensor '{}' not found".format(sensor))
         return None
 
 class Device(Telldus):

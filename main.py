@@ -8,8 +8,7 @@ import yaml
 import logging.config
 
 import src.telldus as telldus
-import tellcore.telldus as td
-import tellcore.constants as const
+from src.telldus import const, td
 
 from paho.mqtt import client as mqtt_client
 

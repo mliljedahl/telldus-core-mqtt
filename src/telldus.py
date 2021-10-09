@@ -28,10 +28,6 @@ class Telldus:
     def get_config(self):
         return self.config
 
-    # @name.setter
-    # def name(self, name):
-    #     self.__name = name
-
 
     def create_topics(self, data):
         topics_to_create = []
@@ -104,14 +100,19 @@ class Telldus:
 
 
 class Sensor(Telldus):
-    def get(self):
+    def get(self, id=None):
         sensors_data = []
         wind_directions = ["N", "NNE", "NE", "ENE",
                            "E", "ESE", "SE", "SSE",
                            "S", "SSW", "SW", "WSW",
                            "W", "WNW", "NW", "NNW"]
 
-        for sensor in self.core.sensors():
+        if id is not None:
+            sensors = [self._find_sensor(id)]
+        else:
+            sensors = self.core.sensors()
+
+        for sensor in sensors:
             if sensor.has_temperature():
                 s = {}
                 state_data = {}
@@ -185,14 +186,21 @@ class Sensor(Telldus):
         return sensors_data
 
 
+    def _find_sensor(self, sensor):
+        for s in self.core.sensors():
+            if str(s.id) == sensor:
+                return s
+        logging.warning("Device '{}' not found".format(sensor))
+        return None
+
 class Device(Telldus):
     def get(self, id=None):
         devices_data = []
 
-        if not id:
-            devices = self.core.devices()
-        else:
+        if id is not None:
             devices = [self._find_device(id)]
+        else:
+            devices = self.core.devices()
 
         for device in devices:
             d = {}

@@ -127,6 +127,10 @@ def sensor_event(protocol, model, id_, dataType, value, timestamp, cid):
     string = '[SENSOR] {0} {1} ({2}) = {3}'.format(id_, model, type_string, value)
     logging.debug('[SENSOR] {}'.format(string))
 
+    # Sensors can be added to telldus-core without a restart, ensure config topic for hass
+    sensor_topics = s.create_topics(s.get(id_))
+    initial_publish(mqtt_client, sensor_topics)
+
     topic = s.create_topic(id_, type_string)
     data = s.create_topic_data(type_string, value)
     publish_mqtt(mqtt_client, topic, data)

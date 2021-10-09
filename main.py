@@ -121,7 +121,7 @@ with open('./logging.yaml', 'r') as stream:
     logging_config = yaml.load(stream, Loader=yaml.FullLoader)
 
 logging.config.dictConfig(logging_config)
-logger = logging.getLogger('telldus-core-mqtt')
+logger = logging.getLogger('telldus-core-mqtt-main')
 
 # Setup connection MQTT server
 c = telldus.Telldus()

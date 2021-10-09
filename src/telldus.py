@@ -3,12 +3,20 @@
 
 import json
 import time
+import yaml
 import logging
 
 import tellcore.telldus as td
 import tellcore.constants as const
 
 from pyaml_env import parse_config
+
+
+with open('./logging.yaml', 'r') as stream:
+    logging_config = yaml.load(stream, Loader=yaml.FullLoader)
+
+logging.config.dictConfig(logging_config)
+logger = logging.getLogger('telldus-core-mqtt')
 
 
 class Telldus:
@@ -188,10 +196,17 @@ class Device(Telldus):
 
         for device in devices:
             d = {}
-            device_model = device.model
+            device_model = ''
 
-            if device.model == 'selflearning-switch':
+            if 'switch' in device.model:
                 device_model = 'switch'
+
+            if 'dimmer' in device.model:
+                device_model = 'dimmer'
+
+            if device_model == '':
+                logging.INFO('Device "{}" not yet supported, please raise an github issue.'.format(device.model))
+                continue
 
             state_data = {}
 

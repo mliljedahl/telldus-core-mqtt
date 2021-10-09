@@ -20,14 +20,21 @@ logger = logging.getLogger('telldus-core-mqtt')
 
 
 class Telldus:
-    def __init__(self):
-        self.core = td.TelldusCore()
+    def __init__(self, core=None):
         self.config = parse_config('config_default.yaml')
+
+        if core is None:
+            self.core = td.TelldusCore()
+        else:
+            self.core = core
 
     @property
     def get_config(self):
         return self.config
 
+    @property
+    def td_core(self):
+        return self.core
 
     def create_topics(self, data):
         topics_to_create = []
@@ -188,7 +195,7 @@ class Sensor(Telldus):
 
     def _find_sensor(self, sensor):
         for s in self.core.sensors():
-            if str(s.id) == sensor:
+            if int(s.id) == int(sensor):
                 return s
         logging.warning("Sensor '{}' not found".format(sensor))
         return None

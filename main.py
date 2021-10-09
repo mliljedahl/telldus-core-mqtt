@@ -153,11 +153,26 @@ with open('./logging.yaml', 'r') as stream:
 logging.config.dictConfig(logging_config)
 logger = logging.getLogger('telldus-core-mqtt-main')
 
+# Wait 30s for telldus-core to start and start collecting data
+logging.info('Waiting for telldus-core to start...')
+time.sleep(30)
+logging.info('telldus-core have started.')
+
 # Setup connection MQTT server
 c = telldus.Telldus()
 config = c.get_config
 client_id = 'telldus-core-mqtt-{}'.format(random.randint(0, 1000))
 mqtt_client = connect_mqtt(config, client_id)
+
+# On program start, collect sensors to publish to MQTT server
+s = telldus.Sensor(c.td_core)
+sensor_topics = s.create_topics(s.get())
+initial_publish(mqtt_client, sensor_topics)
+
+# On program start, collect devices to publish to MQTT server
+d = telldus.Device(c.td_core)
+device_topics = d.create_topics(d.get())
+initial_publish(mqtt_client, device_topics)
 
 # Initialize event listener for telldus-core
 telldus_core = asyncio.get_event_loop()
@@ -168,16 +183,6 @@ callbacks = []
 # Events to listen for from telldus-core
 callbacks.append(core.register_device_event(device_event))
 callbacks.append(core.register_sensor_event(sensor_event))
-
-# On program start, collect sensors to publish to MQTT server
-s = telldus.Sensor()
-sensor_topics = s.create_topics(s.get())
-initial_publish(mqtt_client, sensor_topics)
-
-# On program start, collect devices to publish to MQTT server
-d = telldus.Device()
-device_topics = d.create_topics(d.get())
-initial_publish(mqtt_client, device_topics)
 
 # Main loop
 try:

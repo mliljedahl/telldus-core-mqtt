@@ -66,7 +66,6 @@ def subscribe_device(client: mqtt_client):
         id = msg.topic.split('/')[1]
         cmd_status = False
 
-        # TODO: Support other than on/off
         if int(msg.payload.decode()) == int(const.TELLSTICK_TURNON):
             logging.debug('[DEVICE] Sending command ON to device id {}'.format(id))
             cmd_status = d.turn_on(id)
@@ -75,19 +74,47 @@ def subscribe_device(client: mqtt_client):
             logging.debug('[DEVICE] Sending command OFF to device id {}'.format(id))
             cmd_status = d.turn_off(id)
 
-        if cmd_status:
-            pass
+        # TODO: Need to find out what Home Assistant sends to dim...
+        # https://www.home-assistant.io/integrations/light.mqtt/
+        value = int(0)
+        if int(msg.payload.decode()) == int(const.TELLSTICK_DIM):
+            logging.debug('[DEVICE] Sending command DIM "{}" to device id {}'.format(id, value))
+            logging.info('[DEVICE] MSG = {}'.format(msg))
+            cmd_status = d.dim(id, value)
+
+        if int(msg.payload.decode()) == int(const.TELLSTICK_BELL):
+            logging.debug('[DEVICE] Sending command BELL to device id {}'.format(id))
+            cmd_status = d.bell(id)
+
+        if int(msg.payload.decode()) == int(const.TELLSTICK_EXECUTE):
+            logging.debug('[DEVICE] Sending command EXECUTE to device id {}'.format(id))
+            cmd_status = d.execute(id)
+
+        if int(msg.payload.decode()) == int(const.TELLSTICK_UP):
+            logging.debug('[DEVICE] Sending command UP to device id {}'.format(id))
+            cmd_status = d.up(id)
+
+        if int(msg.payload.decode()) == int(const.TELLSTICK_DOWN):
+            logging.debug('[DEVICE] Sending command DOWN to device id {}'.format(id))
+            cmd_status = d.down(id)
+
+        if int(msg.payload.decode()) == int(const.TELLSTICK_STOP):
+            logging.debug('[DEVICE] Sending command STOP to device id {}'.format(id))
+            cmd_status = d.stop(id)
+
+        if not cmd_status:
+            logging.debug('[DEVICE] Command "{}" not supported, please open a github issue with this message.'.format(msg))
 
     client.subscribe('{}/+/+/set'.format(config['home_assistant']['state_topic']))
     client.on_message = on_message
 
 
 def device_event(id_, method, data, cid):
-    method_string = METHODS.get(method, "UNKNOWN METHOD {0}".format(method))
-    string = "[DEVICE] {0} -> {1} ({2})".format(id_, method_string, method)
+    method_string = METHODS.get(method, 'UNKNOWN METHOD {0}'.format(method))
+    string = '[DEVICE] {0} -> {1} ({2})'.format(id_, method_string, method)
     if method == const.TELLSTICK_DIM:
-        string += " [{0}]".format(data)
-    logging.debug(string)
+        string += ' [{0}]'.format(data)
+    logging.debug('[DEVICE] {}'.format(string))
 
     # TODO: Need method to lookup id and get model, now assuming "switch"
     topic = d.create_topic(id_, 'switch')
@@ -96,9 +123,9 @@ def device_event(id_, method, data, cid):
 
 
 def sensor_event(protocol, model, id_, dataType, value, timestamp, cid):
-    type_string = TYPES.get(dataType, "UNKNOWN METHOD {0}".format(dataType))
-    string = "[SENSOR] {0} {1} ({2}) = {3}".format(id_, model, type_string, value)
-    logging.debug(string)
+    type_string = TYPES.get(dataType, 'UNKNOWN METHOD {0}'.format(dataType))
+    string = '[SENSOR] {0} {1} ({2}) = {3}'.format(id_, model, type_string, value)
+    logging.debug('[SENSOR] {}'.format(string))
 
     topic = s.create_topic(id_, type_string)
     data = s.create_topic_data(type_string, value)

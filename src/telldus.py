@@ -244,6 +244,69 @@ class Device(Telldus):
         return False
 
 
+    def bell(self, id):
+        device = self._find_device(id)
+        if device is not None:
+            for _i in range(int(self.config['telldus']['repeat_cmd'])):
+                time.sleep(1)
+                device.bell()
+            return True
+        return False
+
+
+    def dim(self, id, value):
+        if int(value) >= 0 and int(value) <= 255:
+            device = self._find_device(id)
+            if device is not None:
+                for _i in range(int(self.config['telldus']['repeat_cmd'])):
+                    time.sleep(1)
+                    device.dim(int(value))
+                return True
+
+        logging.warning('Dim value "{}" not in range 0 - 255'.format(value))
+        return False
+
+
+    def execute(self, id):
+        device = self._find_device(id)
+        if device is not None:
+            for _i in range(int(self.config['telldus']['repeat_cmd'])):
+                time.sleep(1)
+                device.execute()
+            return True
+        return False
+
+
+    def up(self, id):
+        device = self._find_device(id)
+        if device is not None:
+            for _i in range(int(self.config['telldus']['repeat_cmd'])):
+                time.sleep(1)
+                device.up()
+            return True
+        return False
+
+
+    def down(self, id):
+        device = self._find_device(id)
+        if device is not None:
+            for _i in range(int(self.config['telldus']['repeat_cmd'])):
+                time.sleep(1)
+                device.down()
+            return True
+        return False
+
+
+    def stop(self, id):
+        device = self._find_device(id)
+        if device is not None:
+            for _i in range(int(self.config['telldus']['repeat_cmd'])):
+                time.sleep(1)
+                device.stop()
+            return True
+        return False
+
+
     def _find_device(self, device):
         for d in self.core.devices():
             if str(d.id) == device or d.name == device:

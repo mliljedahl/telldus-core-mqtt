@@ -1,7 +1,7 @@
 version: "3"
 services:
   telldus-core-mqtt:
-    image: telldus-core-mqtt:latest
+    image: mliljedahl/telldus-core-mqtt:1.1.0
     container_name: telldus-core-mqtt
     restart: unless-stopped
     environment:

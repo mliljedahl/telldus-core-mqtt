@@ -51,7 +51,10 @@ class Telldus:
                 topics['state']['topic'] = '{}/{}/{}/state'.format(self.config['home_assistant']['state_topic'], d['device'].id, d['type'])
                 topics['command'] = {}
                 topics['command']['topic'] = '{}/{}/{}/set'.format(self.config['home_assistant']['state_topic'], d['device'].id, d['type'])
-                config_data = self._create_config_data(d['device'], topics['state']['topic'], d, topics['command']['topic'])
+                topics['brightness'] = {}
+                topics['brightness']['command'] = '{}/{}/{}/set'.format(self.config['home_assistant']['state_topic'], d['device'].id, 'brightness')
+                topics['brightness']['state'] = '{}/{}/{}/dim'.format(self.config['home_assistant']['state_topic'], d['device'].id, 'brightness')
+                config_data = self._create_config_data(d['device'], topics['state']['topic'], d, topics['command']['topic'], topics['brightness'])
 
             topics['config']['data'] = json.dumps(config_data, ensure_ascii=False)
             topics['state']['data'] = json.dumps(d['state_data'], ensure_ascii=False)
@@ -60,7 +63,7 @@ class Telldus:
         return topics_to_create
 
 
-    def _create_config_data(self, device, state_topic, extra, command_topic=None):
+    def _create_config_data(self, device, state_topic, extra, command_topic=None, brightness_command=None):
         # common
         config_data = {}
         config_data['unique_id'] = '{}_telldus_{}'.format(device.id, extra['type'])
@@ -68,6 +71,10 @@ class Telldus:
             config_data['name'] = device.name
         else:
             config_data['name'] = 'telldus_{}_{}'.format(device.id, extra['type'])
+        if extra['type'] == 'light':
+            config_data['brightness_state_topic'] = brightness_command['state']
+            config_data['brightness_value_template'] = '{{ value_json.%s }}' % 'brightness'
+            config_data['brightness_command_topic'] = brightness_command['command']
         config_data['state_topic'] = state_topic
         config_data['value_template'] = '{{ value_json.%s }}' % extra['type']
         config_data['device'] = {}
@@ -90,14 +97,18 @@ class Telldus:
             config_data['command_topic'] = command_topic
             config_data['payload_on'] = const.TELLSTICK_TURNON
             config_data['payload_off'] = const.TELLSTICK_TURNOFF
-            config_data['state_on'] = const.TELLSTICK_TURNON
-            config_data['state_off'] = const.TELLSTICK_TURNOFF
+            if extra['type'] != 'light':
+                config_data['state_on'] = const.TELLSTICK_TURNON
+                config_data['state_off'] = const.TELLSTICK_TURNOFF
 
         return config_data
 
 
     def create_topic(self, id, model):
-        topic = '{}/{}/{}/state'.format(self.config['home_assistant']['state_topic'], id, model)
+        if model == 'light':
+            topic = '{}/{}/brightness/dim'.format(self.config['home_assistant']['state_topic'], id)
+        else:
+            topic = '{}/{}/{}/state'.format(self.config['home_assistant']['state_topic'], id, model)
         return topic
 
 
@@ -193,11 +204,11 @@ class Sensor(Telldus):
         return sensors_data
 
 
-    def _find_sensor(self, sensor):
+    def _find_sensor(self, id):
         for s in self.core.sensors():
-            if int(s.id) == int(sensor):
+            if int(s.id) == int(id):
                 return s
-        logging.warning("Sensor '{}' not found".format(sensor))
+        logging.warning('Sensor id "{}" not found'.format(int(id)))
         return None
 
 class Device(Telldus):
@@ -217,7 +228,7 @@ class Device(Telldus):
                 device_model = 'switch'
 
             if 'dimmer' in device.model:
-                device_model = 'dimmer'
+                device_model = 'light'
 
             if device_model == '':
                 logging.INFO('Device "{}" not yet supported, please raise an github issue.'.format(device.model))
@@ -322,9 +333,9 @@ class Device(Telldus):
         return False
 
 
-    def _find_device(self, device):
+    def _find_device(self, id):
         for d in self.core.devices():
-            if str(d.id) == device or d.name == device:
+            if int(d.id) == int(id):
                 return d
-        logging.warning("Device '{}' not found".format(device))
+        logging.warning('Device id "{}" not found'.format(int(id)))
         return None

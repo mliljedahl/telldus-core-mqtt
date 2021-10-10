@@ -63,23 +63,23 @@ def subscribe_device(client: mqtt_client):
     def on_message(client, userdata, msg):
         logging.info(f"Received `{msg.payload.decode()}` from `{msg.topic}` topic")
         id = msg.topic.split('/')[1]
+        module = msg.topic.split('/')[2]
+        action = msg.topic.split('/')[3]
         cmd_status = False
 
-        if int(msg.payload.decode()) == int(const.TELLSTICK_TURNON):
-            logging.debug('[DEVICE] Sending command ON to device id {}'.format(id))
-            cmd_status = d.turn_on(id)
+        if module == 'light':
+            if action == 'dim':
+                logging.debug('[DEVICE] Sending command DIM "{}" to device id {}'.format(int(msg.payload.decode()), id))
+                cmd_status = d.dim(id, int(msg.payload.decode()))
 
-        if int(msg.payload.decode()) == int(const.TELLSTICK_TURNOFF):
-            logging.debug('[DEVICE] Sending command OFF to device id {}'.format(id))
-            cmd_status = d.turn_off(id)
+        if action != 'dim':
+            if int(msg.payload.decode()) == int(const.TELLSTICK_TURNON):
+                logging.debug('[DEVICE] Sending command ON to device id {}'.format(id))
+                cmd_status = d.turn_on(id)
 
-        # TODO: Need to find out what Home Assistant sends to dim...
-        # https://www.home-assistant.io/integrations/light.mqtt/
-        value = int(0)
-        if int(msg.payload.decode()) == int(const.TELLSTICK_DIM):
-            logging.debug('[DEVICE] Sending command DIM "{}" to device id {}'.format(id, value))
-            logging.info('[DEVICE] MSG = {}'.format(msg))
-            cmd_status = d.dim(id, value)
+            if int(msg.payload.decode()) == int(const.TELLSTICK_TURNOFF):
+                logging.debug('[DEVICE] Sending command OFF to device id {}'.format(id))
+                cmd_status = d.turn_off(id)
 
         if int(msg.payload.decode()) == int(const.TELLSTICK_BELL):
             logging.debug('[DEVICE] Sending command BELL to device id {}'.format(id))
@@ -113,20 +113,23 @@ def device_event(id_, method, data, cid):
     string = '[DEVICE] {0} -> {1} ({2})'.format(id_, method_string, method)
     if method == const.TELLSTICK_DIM:
         string += ' [{0}]'.format(data)
-    logging.debug('[DEVICE] {}'.format(string))
+    logging.debug(string)
 
-    # TODO: Need method to lookup id and get model, now assuming "switch"
-    topic = d.create_topic(id_, 'switch')
-    data = d.create_topic_data('switch', method)
-    publish_mqtt(mqtt_client, topic, data)
+    if method == const.TELLSTICK_DIM:
+        topic = d.create_topic(id_, 'light')
+        topic_data = d.create_topic_data('light', data)
+    else:
+        topic = d.create_topic(id_, 'switch')
+        topic_data = d.create_topic_data('switch', method)
+    publish_mqtt(mqtt_client, topic, topic_data)
 
 
 def sensor_event(protocol, model, id_, dataType, value, timestamp, cid):
     type_string = TYPES.get(dataType, 'UNKNOWN METHOD {0}'.format(dataType))
     string = '[SENSOR] {0} {1} ({2}) = {3}'.format(id_, model, type_string, value)
-    logging.debug('[SENSOR] {}'.format(string))
+    logging.debug(string)
 
-    # Sensors can be added to telldus-core without a restart, ensure config topic for hass
+    # Sensors can be added or discovered in telldus-core without a restart, ensure config topic for HASS
     sensor_topics = s.create_topics(s.get(id_))
     initial_publish(mqtt_client, sensor_topics)
 
@@ -141,10 +144,6 @@ def initial_publish(mqtt_client, topics):
             publish_mqtt(mqtt_client, topic['config']['topic'], topic['config']['data'])
         if 'state' in topic:
             publish_mqtt(mqtt_client, topic['state']['topic'], topic['state']['data'])
-        if 'command' in topic:
-            if 'data' in topic['command']:
-                publish_mqtt(mqtt_client, topic['command']['topic'], topic['command']['data'])
-
 
 
 with open('./logging.yaml', 'r') as stream:
@@ -153,9 +152,9 @@ with open('./logging.yaml', 'r') as stream:
 logging.config.dictConfig(logging_config)
 logger = logging.getLogger('telldus-core-mqtt-main')
 
-# Wait 30s for telldus-core to start and start collecting data
+# Wait 5s for telldus-core to start and start collecting data
 logging.info('Waiting for telldus-core to start...')
-time.sleep(30)
+time.sleep(5)
 logging.info('telldus-core have started.')
 
 # Setup connection MQTT server

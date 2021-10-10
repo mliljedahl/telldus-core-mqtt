@@ -3,7 +3,7 @@ home_assistant:
   state_topic: !ENV ${TDM_STATE_TOPIC:telldus}
 
 telldus:
-  repeat_cmd: !ENV ${TDM_REPEAT_CMD:5}
+  repeat_cmd: !ENV ${TDM_REPEAT_CMD:3}
 
 mqtt:
   broker: !ENV ${TDM_MQTT_SERVER:127.0.0.1}

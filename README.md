@@ -82,6 +82,15 @@ The following are the known limitations.
 * The only sensors that have been tested are the temperature and humidity sensors. As for devices only on/off switches have been tested.
 * Tested with a TellStick Duo, might also work with the TellStick or other controllers supported by telldus-core.
 
+
+## Internal tools
+
+`tdtool` is compiled to the docker image.
+
+```
+$ docker exec telldus-core-mqtt tdtool --help
+```
+
 ## Development
 
 For now the only sensors that have been tested are the temperature and humidity sensors. As for devices only on/off switches have been tested. So there is still much to test and develop in this project. Please file an [issue](https://github.com/mliljedahl/telldus-core-mqtt/issues) or even better, provide a [pull request](https://github.com/mliljedahl/telldus-core-mqtt/pulls).

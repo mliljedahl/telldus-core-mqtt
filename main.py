@@ -8,8 +8,7 @@ import yaml
 import logging.config
 
 import src.telldus as telldus
-import tellcore.telldus as td
-import tellcore.constants as const
+from src.telldus import const, td
 
 from paho.mqtt import client as mqtt_client
 
@@ -64,41 +63,75 @@ def subscribe_device(client: mqtt_client):
     def on_message(client, userdata, msg):
         logging.info(f"Received `{msg.payload.decode()}` from `{msg.topic}` topic")
         id = msg.topic.split('/')[1]
+        module = msg.topic.split('/')[2]
+        action = msg.topic.split('/')[3]
         cmd_status = False
 
-        # TODO: Support other than on/off
-        if int(msg.payload.decode()) == int(const.TELLSTICK_TURNON):
-            logging.debug('[DEVICE] Sending command ON to device id {}'.format(id))
-            cmd_status = d.turn_on(id)
+        if module == 'light':
+            if action == 'dim':
+                logging.debug('[DEVICE] Sending command DIM "{}" to device id {}'.format(int(msg.payload.decode()), id))
+                cmd_status = d.dim(id, int(msg.payload.decode()))
 
-        if int(msg.payload.decode()) == int(const.TELLSTICK_TURNOFF):
-            logging.debug('[DEVICE] Sending command OFF to device id {}'.format(id))
-            cmd_status = d.turn_off(id)
+        if action != 'dim':
+            if int(msg.payload.decode()) == int(const.TELLSTICK_TURNON):
+                logging.debug('[DEVICE] Sending command ON to device id {}'.format(id))
+                cmd_status = d.turn_on(id)
 
-        if cmd_status:
-            pass
+            if int(msg.payload.decode()) == int(const.TELLSTICK_TURNOFF):
+                logging.debug('[DEVICE] Sending command OFF to device id {}'.format(id))
+                cmd_status = d.turn_off(id)
+
+        if int(msg.payload.decode()) == int(const.TELLSTICK_BELL):
+            logging.debug('[DEVICE] Sending command BELL to device id {}'.format(id))
+            cmd_status = d.bell(id)
+
+        if int(msg.payload.decode()) == int(const.TELLSTICK_EXECUTE):
+            logging.debug('[DEVICE] Sending command EXECUTE to device id {}'.format(id))
+            cmd_status = d.execute(id)
+
+        if int(msg.payload.decode()) == int(const.TELLSTICK_UP):
+            logging.debug('[DEVICE] Sending command UP to device id {}'.format(id))
+            cmd_status = d.up(id)
+
+        if int(msg.payload.decode()) == int(const.TELLSTICK_DOWN):
+            logging.debug('[DEVICE] Sending command DOWN to device id {}'.format(id))
+            cmd_status = d.down(id)
+
+        if int(msg.payload.decode()) == int(const.TELLSTICK_STOP):
+            logging.debug('[DEVICE] Sending command STOP to device id {}'.format(id))
+            cmd_status = d.stop(id)
+
+        if not cmd_status:
+            logging.debug('[DEVICE] Command "{}" not supported, please open a github issue with this message.'.format(msg))
 
     client.subscribe('{}/+/+/set'.format(config['home_assistant']['state_topic']))
     client.on_message = on_message
 
 
 def device_event(id_, method, data, cid):
-    method_string = METHODS.get(method, "UNKNOWN METHOD {0}".format(method))
-    string = "[DEVICE] {0} -> {1} ({2})".format(id_, method_string, method)
+    method_string = METHODS.get(method, 'UNKNOWN METHOD {0}'.format(method))
+    string = '[DEVICE] {0} -> {1} ({2})'.format(id_, method_string, method)
     if method == const.TELLSTICK_DIM:
-        string += " [{0}]".format(data)
+        string += ' [{0}]'.format(data)
     logging.debug(string)
 
-    # TODO: Need method to lookup id and get model, now assuming "switch"
-    topic = d.create_topic(id_, 'switch')
-    data = d.create_topic_data('switch', method)
-    publish_mqtt(mqtt_client, topic, data)
+    if method == const.TELLSTICK_DIM:
+        topic = d.create_topic(id_, 'light')
+        topic_data = d.create_topic_data('light', data)
+    else:
+        topic = d.create_topic(id_, 'switch')
+        topic_data = d.create_topic_data('switch', method)
+    publish_mqtt(mqtt_client, topic, topic_data)
 
 
 def sensor_event(protocol, model, id_, dataType, value, timestamp, cid):
-    type_string = TYPES.get(dataType, "UNKNOWN METHOD {0}".format(dataType))
-    string = "[SENSOR] {0} {1} ({2}) = {3}".format(id_, model, type_string, value)
+    type_string = TYPES.get(dataType, 'UNKNOWN METHOD {0}'.format(dataType))
+    string = '[SENSOR] {0} {1} ({2}) = {3}'.format(id_, model, type_string, value)
     logging.debug(string)
+
+    # Sensors can be added or discovered in telldus-core without a restart, ensure config topic for HASS
+    sensor_topics = s.create_topics(s.get(id_))
+    initial_publish(mqtt_client, sensor_topics)
 
     topic = s.create_topic(id_, type_string)
     data = s.create_topic_data(type_string, value)
@@ -111,23 +144,34 @@ def initial_publish(mqtt_client, topics):
             publish_mqtt(mqtt_client, topic['config']['topic'], topic['config']['data'])
         if 'state' in topic:
             publish_mqtt(mqtt_client, topic['state']['topic'], topic['state']['data'])
-        if 'command' in topic:
-            if 'data' in topic['command']:
-                publish_mqtt(mqtt_client, topic['command']['topic'], topic['command']['data'])
-
 
 
 with open('./logging.yaml', 'r') as stream:
     logging_config = yaml.load(stream, Loader=yaml.FullLoader)
 
 logging.config.dictConfig(logging_config)
-logger = logging.getLogger('telldus-core-mqtt')
+logger = logging.getLogger('telldus-core-mqtt-main')
+
+# Wait 5s for telldus-core to start and start collecting data
+logging.info('Waiting for telldus-core to start...')
+time.sleep(5)
+logging.info('telldus-core have started.')
 
 # Setup connection MQTT server
 c = telldus.Telldus()
 config = c.get_config
 client_id = 'telldus-core-mqtt-{}'.format(random.randint(0, 1000))
 mqtt_client = connect_mqtt(config, client_id)
+
+# On program start, collect sensors to publish to MQTT server
+s = telldus.Sensor(c.td_core)
+sensor_topics = s.create_topics(s.get())
+initial_publish(mqtt_client, sensor_topics)
+
+# On program start, collect devices to publish to MQTT server
+d = telldus.Device(c.td_core)
+device_topics = d.create_topics(d.get())
+initial_publish(mqtt_client, device_topics)
 
 # Initialize event listener for telldus-core
 telldus_core = asyncio.get_event_loop()
@@ -138,16 +182,6 @@ callbacks = []
 # Events to listen for from telldus-core
 callbacks.append(core.register_device_event(device_event))
 callbacks.append(core.register_sensor_event(sensor_event))
-
-# On program start, collect sensors to publish to MQTT server
-s = telldus.Sensor()
-sensor_topics = s.create_topics(s.get())
-initial_publish(mqtt_client, sensor_topics)
-
-# On program start, collect devices to publish to MQTT server
-d = telldus.Device()
-device_topics = d.create_topics(d.get())
-initial_publish(mqtt_client, device_topics)
 
 # Main loop
 try:

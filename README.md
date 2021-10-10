@@ -2,7 +2,7 @@
 
 **telldus-core-mqtt** is a MQTT broker for telldus-core to integrate with [Home Assistant](https://www.home-assistant.io/) using their [MQTT Discovery](https://www.home-assistant.io/docs/mqtt/discovery/).
 
-For now sensors and on/off switches are supported, see [Known limitations](#Known-limitations) and [Development](#Development) for more information.
+For now sensors, on/off switches and dimmers are supported, see [Known limitations](#Known-limitations) and [Development](#Development) for more information.
 
 ## Configuration
 
@@ -41,7 +41,7 @@ Here is an example using docker-compose.yml:
 
 ```
   telldus-core-mqtt:
-    image: mliljedahl/telldus-core-mqtt:1.0.0
+    image: mliljedahl/telldus-core-mqtt:1.1.0
     container_name: telldus-core-mqtt
     restart: unless-stopped
     environment:
@@ -79,7 +79,7 @@ $ ./main.py
 The following are the known limitations.
 
 * telldus-core do not compile in alpine linux 3.14.
-* The only sensors that have been tested are the temperature and humidity sensors. As for devices only on/off switches have been tested.
+* The only sensors that have been tested are the temperature and humidity sensors. As for devices on/off switches and dimmers have been tested.
 * Tested with a TellStick Duo, might also work with the TellStick or other controllers supported by telldus-core.
 
 
@@ -93,7 +93,7 @@ $ docker exec telldus-core-mqtt tdtool --help
 
 ## Development
 
-For now the only sensors that have been tested are the temperature and humidity sensors. As for devices only on/off switches have been tested. So there is still much to test and develop in this project. Please file an [issue](https://github.com/mliljedahl/telldus-core-mqtt/issues) or even better, provide a [pull request](https://github.com/mliljedahl/telldus-core-mqtt/pulls).
+For now the only sensors that have been tested are the temperature and humidity sensors. As for devices on/off switches and dimmers have been tested. So there is still much to test and develop in this project. Please file an [issue](https://github.com/mliljedahl/telldus-core-mqtt/issues) or even better, provide a [pull request](https://github.com/mliljedahl/telldus-core-mqtt/pulls).
 
 If you want to provide me with sensors or devices for testing and further development that is also welcome.
 

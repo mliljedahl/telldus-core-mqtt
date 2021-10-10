@@ -1,9 +1,13 @@
 # telldus-core-mqtt
+![Docker Image Version (latest semver)](https://img.shields.io/docker/v/mliljedahl/telldus-core-mqtt)
+![Docker Image Size (latest semver)](https://img.shields.io/docker/image-size/mliljedahl/telldus-core-mqtt)
+![Docker Pulls](https://img.shields.io/docker/pulls/mliljedahl/telldus-core-mqtt)
 
 **telldus-core-mqtt** is a MQTT broker for telldus-core to integrate with [Home Assistant](https://www.home-assistant.io/) using their [MQTT Discovery](https://www.home-assistant.io/docs/mqtt/discovery/).
 
 For now sensors, on/off switches and dimmers are supported, see [Known limitations](#Known-limitations) and [Development](#Development) for more information.
 
+![Home Assistant MQTT Discovery](hass_mqtt_discovery.png)
 ## Configuration
 
 It is possible to either use the `config_default.yaml` file or set the config parameters found in the file as environment variables. If the environment variables are not found the values from `config_default.yaml` are used.
@@ -62,7 +66,7 @@ $ docker-compose up -d
 ### Docker run
 
 ```
-$ docker run --name telldus-core-mqtt -e TDM_MQTT_SERVER=localhost -e TDM_MQTT_USER=telldus-core-mqtt -e TDM_MQTT_PASS=telldus-core-mqtt -v ./tellstick.conf:/etc/tellstick.conf:ro --device=/dev/bus/usb:/dev/bus/usb:rwm -d mliljedahl/telldus-core-mqtt:1.0.0
+$ docker run --name telldus-core-mqtt -e TDM_MQTT_SERVER=localhost -e TDM_MQTT_USER=telldus-core-mqtt -e TDM_MQTT_PASS=telldus-core-mqtt -v ./tellstick.conf:/etc/tellstick.conf:ro --device=/dev/bus/usb:/dev/bus/usb:rwm -d mliljedahl/telldus-core-mqtt:1.1.0
 ```
 
 ### Python virtual environment

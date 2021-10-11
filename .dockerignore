@@ -27,6 +27,7 @@ src/venv/
 src/__pycache__/
 src/*.py[cod]
 src/*$py.class
+.tox
 
 # Development
 dev/

@@ -2,15 +2,14 @@
 # -*- coding: utf-8 -*-
 
 import json
-import time
 import logging
-import yaml
+import time
 
-import tellcore.telldus as td
 import tellcore.constants as const
-
+import tellcore.telldus as td
+import yaml
+from dotmap import DotMap
 from pyaml_env import parse_config
-
 
 with open('./logging.yaml', 'r', encoding='utf-8') as stream:
     logging_config = yaml.load(stream, Loader=yaml.SafeLoader)
@@ -77,6 +76,16 @@ class Telldus:
                 config_data = self._create_config_data(
                     d['device'], topics['state']['topic'], d,
                     topics['command']['topic'], topics['brightness'])
+            elif 'command' in d:
+                topics['config']['topic'] = ('{}/{}/{}_telldus/{}/config'
+                                             .format(
+                                                 config_topic, d['type'],
+                                                 d['command'].id, d['type']))
+                topics['state']['topic'] = '{}/{}/{}/state'.format(
+                    self.config['home_assistant']['state_topic'],
+                    d['command'].id, d['type'])
+                config_data = self._create_config_data(
+                    d['command'], topics['state']['topic'], d)
 
             topics['config']['data'] = json.dumps(
                 config_data, ensure_ascii=False)
@@ -90,45 +99,60 @@ class Telldus:
                             command_topic=None, bt_command=None):
         # common
         config_data = {}
+        config_data['device'] = {}
         config_data['unique_id'] = ('{}_telldus_{}'
                                     .format(device.id, extra['type']))
-        if hasattr(device, 'name'):
+
+        if hasattr(device, 'name') and device.name != {}:
             config_data['name'] = device.name
+            config_data['device']['name'] = device.name
         else:
-            config_data['name'] = ('telldus_{}_{}'
-                                   .format(device.id, extra['type']))
+            config_data['name'] = ('telldus_{}_{}'.format(
+                device.id, extra['type']))
+            config_data['device']['name'] = '{}_{}'.format(
+                device.id, device.model)
+
         if extra['type'] == 'light':
             bt_value_template = '{{ value_json.%s }}' % 'brightness'
             config_data['brightness_state_topic'] = bt_command['state']
             config_data['brightness_value_template'] = bt_value_template
             config_data['brightness_command_topic'] = bt_command['command']
+
         config_data['state_topic'] = state_topic
         config_data['value_template'] = '{{ value_json.%s }}' % extra['type']
-        config_data['device'] = {}
         config_data['device']['identifiers'] = []
         config_data['device']['identifiers'].append('{}_{}'.format(
             device.id, device.model))
-        if hasattr(device, 'name'):
-            config_data['device']['name'] = device.name
-        else:
-            config_data['device']['name'] = '{}_{}'.format(
-                device.id, device.model)
         config_data['device']['model'] = device.model
         config_data['device']['manufacturer'] = device.protocol
-        # sensor only
+
         # if unit is set assume sensor
         if 'unit' in extra:
             config_data['device_class'] = extra['type']
             config_data['unit_of_measurement'] = extra['unit']
+
+        # if command exists assume binary_sensor
+        if 'command' in extra:
+            # https://www.home-assistant.io/integrations/binary_sensor/#device-class
+            # config_data['device_class'] = "None"
+            config_data['payload_on'] = const.TELLSTICK_TURNON
+            config_data['payload_off'] = const.TELLSTICK_TURNOFF
+            config_data['expire_after'] = 60 * 60 * 24
+            config_data['force_update'] = True
+
         # device only
         # if command_topic exists assume device
         if command_topic is not None:
             config_data['command_topic'] = command_topic
-            config_data['payload_on'] = const.TELLSTICK_TURNON
-            config_data['payload_off'] = const.TELLSTICK_TURNOFF
             if extra['type'] != 'light':
                 config_data['state_on'] = const.TELLSTICK_TURNON
                 config_data['state_off'] = const.TELLSTICK_TURNOFF
+            if extra['type'] == 'light':
+                config_data['payload_on'] = 255
+                config_data['payload_off'] = 0
+            else:
+                config_data['payload_on'] = const.TELLSTICK_TURNON
+                config_data['payload_off'] = const.TELLSTICK_TURNOFF
 
         return config_data
 
@@ -363,3 +387,53 @@ class Device(Telldus):
                 return device
         logging.warning('Device id "%d" not found', int(device_id))
         return None
+
+
+class Command(Telldus):
+    def __init__(self, core=None):
+        super().__init__(core=core)
+        self.command = None
+        self.serialized = None
+
+    def get(self, raw_data):
+        # binary_sensor
+        # https://www.home-assistant.io/integrations/binary_sensor/#device-class
+        command_data = {}
+        state_data = {}
+        sdata = self.serialize(raw_data)
+
+        # Assume all raw "command" comming from raw are binary_sensors
+        device_model = 'binary_sensor'
+        state_data[device_model] = sdata['method']
+        command_data['type'] = device_model
+        command_data['command'] = DotMap(sdata)
+        command_data['state_data'] = state_data
+
+        self.command = [command_data]
+        return self.command
+
+    def serialize(self, raw_data):
+        raw = {}
+
+        if 'command' not in raw_data:
+            return {}
+
+        for d in raw_data.split(';'):
+            _d = d.split(':')
+            if _d[0] and _d[1]:
+                if _d[0] == 'house':
+                    raw['id'] = _d[1]
+                elif _d[0] == 'code':
+                    raw['id'] = _d[1]
+                elif _d[0] == 'method':
+                    if _d[1] == 'turnoff':
+                        raw[_d[0]] = const.TELLSTICK_TURNOFF
+                    elif _d[1] == 'turnon':
+                        raw[_d[0]] = const.TELLSTICK_TURNON
+                    else:
+                        raw[_d[0]] = const.TELLSTICK_ERROR_METHOD_NOT_SUPPORTED
+                else:
+                    raw[_d[0]] = _d[1]
+
+        self.serialized = raw
+        return self.serialized

@@ -7,7 +7,7 @@
 
 For now sensors, binary sensors, on/off switches and dimmers are supported, see [Known limitations](#Known-limitations) and [Development](#Development) for more information.
 
-![Home Assistant MQTT Discovery](https://github.com/mliljedahl/telldus-core-mqtt/blob/master/hass_mqtt_discovery.png)
+![Home Assistant MQTT Discovery](https://raw.githubusercontent.com/mliljedahl/telldus-core-mqtt/master/hass_mqtt_discovery.png)
 ## Configuration
 
 It is possible to either use the `config_default.yaml` file or set the config parameters found in the file as environment variables. If the environment variables are not found the values from `config_default.yaml` are used.

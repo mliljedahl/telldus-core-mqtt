@@ -21,7 +21,7 @@ The MQTT base topic to post to. Default: `homeassistant`
 The MQTT state topic to post to. Default: `telldus`
 
 **`TDM_REPEAT_CMD`**
-Number of times to repeat all telldus commands since it is not possible to know if the command was received or not. Default: `5`
+Number of times to repeat all telldus commands since it is not possible to know if the command was received or not. Default: `3`
 
 **`TDM_MQTT_SERVER`**
 Hostname or IP address of the MQTT server. Default: `localhost`
@@ -78,17 +78,25 @@ $ pip3 install --no-cache-dir -r requirements.txt
 $ ./main.py
 ```
 
+### Linting
+
+See tox.ini for supported environments.
+
+```
+$ tox -e lint
+```
+
 ## Known limitations
 
 The following are the known limitations.
 
-* telldus-core do not compile in alpine linux 3.14.
+* To compile telldus-core in alpine linux 3.14 Docker version 20+ is required.
 * The only sensors that have been tested are the temperature and humidity sensors and binary sensors. As for devices on/off switches and dimmers have been tested.
 * Tested with a TellStick Duo, might also work with the TellStick or other controllers supported by telldus-core.
 
 ## Internal tools
 
-Here are a list of tools that can be helpful for configurating
+Here are a list of tools that can be helpful for creating the telldus.conf file.
 ### tdevents
 
 Example usage:

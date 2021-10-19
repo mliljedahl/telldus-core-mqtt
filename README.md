@@ -5,9 +5,9 @@
 
 **telldus-core-mqtt** is a MQTT broker for telldus-core to integrate with [Home Assistant](https://www.home-assistant.io/) using their [MQTT Discovery](https://www.home-assistant.io/docs/mqtt/discovery/).
 
-For now sensors, on/off switches and dimmers are supported, see [Known limitations](#Known-limitations) and [Development](#Development) for more information.
+For now sensors, binary sensors, on/off switches and dimmers are supported, see [Known limitations](#Known-limitations) and [Development](#Development) for more information.
 
-![Home Assistant MQTT Discovery](hass_mqtt_discovery.png)
+![Home Assistant MQTT Discovery](https://github.com/mliljedahl/telldus-core-mqtt/blob/master/hass_mqtt_discovery.png)
 ## Configuration
 
 It is possible to either use the `config_default.yaml` file or set the config parameters found in the file as environment variables. If the environment variables are not found the values from `config_default.yaml` are used.
@@ -83,21 +83,36 @@ $ ./main.py
 The following are the known limitations.
 
 * telldus-core do not compile in alpine linux 3.14.
-* The only sensors that have been tested are the temperature and humidity sensors. As for devices on/off switches and dimmers have been tested.
+* The only sensors that have been tested are the temperature and humidity sensors and binary sensors. As for devices on/off switches and dimmers have been tested.
 * Tested with a TellStick Duo, might also work with the TellStick or other controllers supported by telldus-core.
-
 
 ## Internal tools
 
-`tdtool` is compiled to the docker image.
+Here are a list of tools that can be helpful for configurating
+### tdevents
 
+Example usage:
 ```
-$ docker exec telldus-core-mqtt tdtool --help
+$ docker exec telldus-core-mqtt tdevents -h
+```
+
+### tdcontroller
+
+Example usage:
+```
+$ docker exec telldus-core-mqtt tdcontroller
+```
+
+### tdtool
+
+Example usage:
+```
+$ docker exec telldus-core-mqtt tdtool -h
 ```
 
 ## Development
 
-For now the only sensors that have been tested are the temperature and humidity sensors. As for devices on/off switches and dimmers have been tested. So there is still much to test and develop in this project. Please file an [issue](https://github.com/mliljedahl/telldus-core-mqtt/issues) or even better, provide a [pull request](https://github.com/mliljedahl/telldus-core-mqtt/pulls).
+For now the only sensors that have been tested are the temperature and humidity sensors and binary sensors. As for devices on/off switches and dimmers have been tested. So there is still much to test and develop in this project. Please file an [issue](https://github.com/mliljedahl/telldus-core-mqtt/issues) or even better, provide a [pull request](https://github.com/mliljedahl/telldus-core-mqtt/pulls).
 
 If you want to provide me with sensors or devices for testing and further development that is also welcome.
 

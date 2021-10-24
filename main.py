@@ -4,6 +4,7 @@
 import asyncio
 import logging.config
 import random
+import threading
 import time
 
 import yaml
@@ -11,6 +12,8 @@ from paho.mqtt import client as mqtt_client
 
 import src.telldus as telldus
 from src.telldus import const, td
+
+THREADING_RLOCK = threading.RLock()
 
 TYPES = {const.TELLSTICK_TEMPERATURE: 'temperature',
          const.TELLSTICK_HUMIDITY: 'humidity',
@@ -50,14 +53,13 @@ def connect_mqtt(config, client_id) -> mqtt_client:
 
 
 def publish_mqtt(client, topic, msg):
-    time.sleep(1)
+    with THREADING_RLOCK:
+        result = client.publish(topic, msg, retain=True)
 
-    result = client.publish(topic, msg, retain=True)
-
-    if result[0] == 0:
-        logging.info('Send "%s" to topic "%s"', msg, topic)
-    else:
-        logging.error('Failed to send message to topic "%s"', topic)
+        if result[0] == 0:
+            logging.info('Send "%s" to topic "%s"', msg, topic)
+        else:
+            logging.error('Failed to send message to topic "%s"', topic)
 
 
 def subscribe_device(client: mqtt_client):
@@ -90,39 +92,47 @@ def subscribe_device(client: mqtt_client):
 
         if action != 'dim' and module != 'light':
             if int(msg.payload.decode()) == int(const.TELLSTICK_TURNON):
+                topic = d.create_topic(device_id, 'switch')
+                topic_data = d.create_topic_data('switch', const.TELLSTICK_TURNON)
+                publish_mqtt(mqtt_device, topic, topic_data)
+
                 logging.debug('[DEVICE] Sending command ON to device '
                               'id %s', device_id)
                 cmd_status = d.turn_on(device_id)
 
             if int(msg.payload.decode()) == int(const.TELLSTICK_TURNOFF):
+                topic = d.create_topic(device_id, 'switch')
+                topic_data = d.create_topic_data('switch', const.TELLSTICK_TURNOFF)
+                publish_mqtt(mqtt_device, topic, topic_data)
+
                 logging.debug('[DEVICE] Sending command OFF to device '
                               'id %s', device_id)
                 cmd_status = d.turn_off(device_id)
 
-        if int(msg.payload.decode()) == int(const.TELLSTICK_BELL):
-            logging.debug('[DEVICE] Sending command BELL to device '
-                          'id %s', device_id)
-            cmd_status = d.bell(device_id)
+        # if int(msg.payload.decode()) == int(const.TELLSTICK_BELL):
+        #     logging.debug('[DEVICE] Sending command BELL to device '
+        #                 'id %s', device_id)
+        #     cmd_status = d.bell(device_id)
 
-        if int(msg.payload.decode()) == int(const.TELLSTICK_EXECUTE):
-            logging.debug('[DEVICE] Sending command EXECUTE to device '
-                          'id %s', device_id)
-            cmd_status = d.execute(device_id)
+        # if int(msg.payload.decode()) == int(const.TELLSTICK_EXECUTE):
+        #     logging.debug('[DEVICE] Sending command EXECUTE to device '
+        #                 'id %s', device_id)
+        #     cmd_status = d.execute(device_id)
 
-        if int(msg.payload.decode()) == int(const.TELLSTICK_UP):
-            logging.debug('[DEVICE] Sending command UP to device id %s',
-                          device_id)
-            cmd_status = d.up(device_id)
+        # if int(msg.payload.decode()) == int(const.TELLSTICK_UP):
+        #     logging.debug('[DEVICE] Sending command UP to device id %s',
+        #                 device_id)
+        #     cmd_status = d.up(device_id)
 
-        if int(msg.payload.decode()) == int(const.TELLSTICK_DOWN):
-            logging.debug('[DEVICE] Sending command DOWN to device id %s',
-                          device_id)
-            cmd_status = d.down(device_id)
+        # if int(msg.payload.decode()) == int(const.TELLSTICK_DOWN):
+        #     logging.debug('[DEVICE] Sending command DOWN to device id %s',
+        #                 device_id)
+        #     cmd_status = d.down(device_id)
 
-        if int(msg.payload.decode()) == int(const.TELLSTICK_STOP):
-            logging.debug('[DEVICE] Sending command STOP to device id %s',
-                          device_id)
-            cmd_status = d.stop(device_id)
+        # if int(msg.payload.decode()) == int(const.TELLSTICK_STOP):
+        #     logging.debug('[DEVICE] Sending command STOP to device id %s',
+        #                 device_id)
+        #     cmd_status = d.stop(device_id)
 
         if not cmd_status:
             logging.debug('[DEVICE] Command "%s" not supported, please open'

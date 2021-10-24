@@ -3,7 +3,7 @@
 
 import json
 import logging
-import time
+import threading
 
 import tellcore.constants as const
 import tellcore.telldus as td
@@ -16,6 +16,8 @@ with open('./logging.yaml', 'r', encoding='utf-8') as stream:
 
 logging.config.dictConfig(logging_config)
 logger = logging.getLogger('telldus-core-mqtt')
+
+THREADING_RLOCK = threading.RLock()
 
 
 class Telldus:
@@ -306,80 +308,74 @@ class Device(Telldus):
         return devices_data
 
     def turn_on(self, device_id):
-        device = self._find_device(device_id)
-        if device is not None:
-            for _i in range(int(self.config['telldus']['repeat_cmd'])):
-                time.sleep(1)
-                device.turn_on()
-            return True
-        return False
+        with THREADING_RLOCK:
+            device = self._find_device(device_id)
+            if device is not None:
+                for _i in range(int(self.config['telldus']['repeat_cmd'])):
+                    device.turn_on()
+                return True
+            return False
 
     def turn_off(self, device_id):
-        device = self._find_device(device_id)
-        if device is not None:
-            for _i in range(int(self.config['telldus']['repeat_cmd'])):
-                time.sleep(1)
-                device.turn_off()
-            return True
-        return False
-
-    def bell(self, device_id):
-        device = self._find_device(device_id)
-        if device is not None:
-            for _i in range(int(self.config['telldus']['repeat_cmd'])):
-                time.sleep(1)
-                device.bell()
-            return True
-        return False
+        with THREADING_RLOCK:
+            device = self._find_device(device_id)
+            if device is not None:
+                for _i in range(int(self.config['telldus']['repeat_cmd'])):
+                    device.turn_off()
+                return True
+            return False
 
     def dim(self, device_id, value):
         if int(value) >= 0 and int(value) <= 255:
             device = self._find_device(device_id)
             if device is not None:
                 for _i in range(int(self.config['telldus']['repeat_cmd'])):
-                    time.sleep(1)
                     device.dim(int(value))
                 return True
 
         logging.warning('Dim value "%d" not in range 0 - 255', int(value))
         return False
 
-    def execute(self, device_id):
-        device = self._find_device(device_id)
-        if device is not None:
-            for _i in range(int(self.config['telldus']['repeat_cmd'])):
-                time.sleep(1)
-                device.execute()
-            return True
-        return False
+    # def bell(self, device_id):
+    #     device = self._find_device(device_id)
+    #     if device is not None:
+    #         for _i in range(int(self.config['telldus']['repeat_cmd'])):
+    #             device.bell()
+    #         return True
+    #     return False
 
-    def up(self, device_id):
-        # pylint: disable=invalid-name
-        device = self._find_device(device_id)
-        if device is not None:
-            for _i in range(int(self.config['telldus']['repeat_cmd'])):
-                time.sleep(1)
-                device.up()
-            return True
-        return False
+    # def execute(self, device_id):
+    #     device = self._find_device(device_id)
+    #     if device is not None:
+    #         for _i in range(int(self.config['telldus']['repeat_cmd'])):
+    #             device.execute()
+    #         return True
+    #     return False
 
-    def down(self, device_id):
-        device = self._find_device(device_id)
-        if device is not None:
-            for _i in range(int(self.config['telldus']['repeat_cmd'])):
-                time.sleep(1)
-                device.down()
-            return True
-        return False
+    # def up(self, device_id):
+    #     # pylint: disable=invalid-name
+    #     device = self._find_device(device_id)
+    #     if device is not None:
+    #         for _i in range(int(self.config['telldus']['repeat_cmd'])):
+    #             device.up()
+    #         return True
+    #     return False
 
-    def stop(self, device_id):
-        device = self._find_device(device_id)
-        if device is not None:
-            for _i in range(int(self.config['telldus']['repeat_cmd'])):
-                time.sleep(1)
-                device.stop()
-            return True
-        return False
+    # def down(self, device_id):
+    #     device = self._find_device(device_id)
+    #     if device is not None:
+    #         for _i in range(int(self.config['telldus']['repeat_cmd'])):
+    #             device.down()
+    #         return True
+    #     return False
+
+    # def stop(self, device_id):
+    #     device = self._find_device(device_id)
+    #     if device is not None:
+    #         for _i in range(int(self.config['telldus']['repeat_cmd'])):
+    #             device.stop()
+    #         return True
+    #     return False
 
     def _find_device(self, device_id):
         for device in self.core.devices():

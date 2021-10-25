@@ -45,7 +45,7 @@ Here is an example using docker-compose.yml:
 
 ```
   telldus-core-mqtt:
-    image: mliljedahl/telldus-core-mqtt:1.2.0
+    image: mliljedahl/telldus-core-mqtt:1.2.1
     container_name: telldus-core-mqtt
     restart: unless-stopped
     environment:
@@ -66,7 +66,7 @@ $ docker-compose up -d
 ### Docker run
 
 ```
-$ docker run --name telldus-core-mqtt -e TDM_MQTT_SERVER=localhost -e TDM_MQTT_USER=telldus-core-mqtt -e TDM_MQTT_PASS=telldus-core-mqtt -v ./tellstick.conf:/etc/tellstick.conf:ro --device=/dev/bus/usb:/dev/bus/usb:rwm -d mliljedahl/telldus-core-mqtt:1.2.0
+$ docker run --name telldus-core-mqtt -e TDM_MQTT_SERVER=localhost -e TDM_MQTT_USER=telldus-core-mqtt -e TDM_MQTT_PASS=telldus-core-mqtt -v ./tellstick.conf:/etc/tellstick.conf:ro --device=/dev/bus/usb:/dev/bus/usb:rwm -d mliljedahl/telldus-core-mqtt:1.2.1
 ```
 
 ### Python virtual environment

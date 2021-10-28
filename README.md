@@ -83,6 +83,9 @@ $ ./main.py
 See tox.ini for supported environments.
 
 ```
+$ python3 -m venv venv
+$ source --no-cache-dir venv/bin/activate
+$ pip install -r dev-requirements.txt
 $ tox -e lint
 ```
 

@@ -2,3 +2,4 @@ bandit==1.7.0
 flake8==4.0.0
 pylint==2.11.1
 tox==3.24.4
+pipupgrade

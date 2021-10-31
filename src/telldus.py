@@ -37,127 +37,6 @@ class Telldus:
     def td_core(self):
         return self.core
 
-    def create_topics(self, data):
-        config_topic = self.config['home_assistant']['config_topic']
-        topics_to_create = []
-
-        # pylint: disable=invalid-name
-        for d in data:
-            topics = {}
-            topics['config'] = {}
-            topics['state'] = {}
-            if 'sensor' in d:
-                topics['config']['topic'] = ('{}/sensor/{}_telldus/{}/config'
-                                             .format(
-                                                 config_topic,
-                                                 d['sensor'].id, d['type']))
-                topics['state']['topic'] = '{}/{}/{}/state'.format(
-                    self.config['home_assistant']['state_topic'],
-                    d['sensor'].id, d['type'])
-                config_data = self._create_config_data(
-                    d['sensor'], topics['state']['topic'], d)
-            elif 'device' in d:
-                topics['config']['topic'] = ('{}/{}/{}_telldus/{}/config'
-                                             .format(
-                                                 config_topic, d['type'],
-                                                 d['device'].id, d['type']))
-                topics['state']['topic'] = '{}/{}/{}/state'.format(
-                    self.config['home_assistant']['state_topic'],
-                    d['device'].id, d['type'])
-                topics['command'] = {}
-                topics['command']['topic'] = '{}/{}/{}/set'.format(
-                    self.config['home_assistant']['state_topic'],
-                    d['device'].id, d['type'])
-                topics['brightness'] = {}
-                topics['brightness']['command'] = '{}/{}/{}/set'.format(
-                    self.config['home_assistant']['state_topic'],
-                    d['device'].id, 'brightness')
-                topics['brightness']['state'] = '{}/{}/{}/dim'.format(
-                    self.config['home_assistant']['state_topic'],
-                    d['device'].id, 'brightness')
-                config_data = self._create_config_data(
-                    d['device'], topics['state']['topic'], d,
-                    topics['command']['topic'], topics['brightness'])
-            elif 'command' in d:
-                topics['config']['topic'] = ('{}/{}/{}_telldus/{}/config'
-                                             .format(
-                                                 config_topic, d['type'],
-                                                 d['command'].id, d['type']))
-                topics['state']['topic'] = '{}/{}/{}/state'.format(
-                    self.config['home_assistant']['state_topic'],
-                    d['command'].id, d['type'])
-                config_data = self._create_config_data(
-                    d['command'], topics['state']['topic'], d)
-
-            topics['config']['data'] = json.dumps(
-                config_data, ensure_ascii=False)
-            topics['state']['data'] = json.dumps(
-                d['state_data'], ensure_ascii=False)
-            topics_to_create.append(topics)
-
-        return topics_to_create
-
-    def _create_config_data(self, device, state_topic, extra,
-                            command_topic=None, bt_command=None):
-        # common
-        config_data = {}
-        config_data['device'] = {}
-        config_data['unique_id'] = ('{}_telldus_{}'
-                                    .format(device.id, extra['type']))
-
-        if hasattr(device, 'name') and device.name != {}:
-            config_data['name'] = device.name
-            config_data['device']['name'] = device.name
-        else:
-            config_data['name'] = ('telldus_{}_{}'.format(
-                device.id, extra['type']))
-            config_data['device']['name'] = '{}_{}'.format(
-                device.id, device.model)
-
-        if extra['type'] == 'light':
-            bt_value_template = '{{ value_json.%s }}' % 'brightness'
-            config_data['brightness_state_topic'] = bt_command['state']
-            config_data['brightness_value_template'] = bt_value_template
-            config_data['brightness_command_topic'] = bt_command['command']
-
-        config_data['state_topic'] = state_topic
-        config_data['value_template'] = '{{ value_json.%s }}' % extra['type']
-        config_data['device']['identifiers'] = []
-        config_data['device']['identifiers'].append('{}_{}'.format(
-            device.id, device.model))
-        config_data['device']['model'] = device.model
-        config_data['device']['manufacturer'] = device.protocol
-
-        # if unit is set assume sensor
-        if 'unit' in extra:
-            config_data['device_class'] = extra['type']
-            config_data['unit_of_measurement'] = extra['unit']
-
-        # if command exists assume binary_sensor
-        if 'command' in extra:
-            # https://www.home-assistant.io/integrations/binary_sensor/#device-class
-            # config_data['device_class'] = "None"
-            config_data['payload_on'] = const.TELLSTICK_TURNON
-            config_data['payload_off'] = const.TELLSTICK_TURNOFF
-            config_data['expire_after'] = 60 * 60 * 24
-            config_data['force_update'] = True
-
-        # device only
-        # if command_topic exists assume device
-        if command_topic is not None:
-            config_data['command_topic'] = command_topic
-            if extra['type'] != 'light':
-                config_data['state_on'] = const.TELLSTICK_TURNON
-                config_data['state_off'] = const.TELLSTICK_TURNOFF
-            if extra['type'] == 'light':
-                config_data['on_command_type'] = 'brightness'
-                config_data['payload_off'] = const.TELLSTICK_TURNOFF
-            else:
-                config_data['payload_on'] = const.TELLSTICK_TURNON
-                config_data['payload_off'] = const.TELLSTICK_TURNOFF
-
-        return config_data
-
     def create_topic(self, type_id, model):
         if model == 'light':
             topic = '{}/{}/brightness/dim'.format(
@@ -260,6 +139,67 @@ class Sensor(Telldus):
 
         return sensors_data
 
+    def create_topics(self, data):
+        config_topic = self.config['home_assistant']['config_topic']
+        topics_to_create = []
+
+        # pylint: disable=invalid-name
+        for d in data:
+            config_data = {}
+            topics = {}
+            topics['config'] = {}
+            topics['state'] = {}
+            if 'sensor' in d:
+                topics['config']['topic'] = ('{}/sensor/{}_telldus/{}/config'
+                                             .format(
+                                                 config_topic,
+                                                 d['sensor'].id, d['type']))
+                topics['state']['topic'] = '{}/{}/{}/state'.format(
+                    self.config['home_assistant']['state_topic'],
+                    d['sensor'].id, d['type'])
+                config_data = self._create_config_data(
+                    d['sensor'], topics['state']['topic'], d)
+
+            topics['config']['data'] = json.dumps(
+                config_data, ensure_ascii=False)
+            topics['state']['data'] = json.dumps(
+                d['state_data'], ensure_ascii=False)
+            topics_to_create.append(topics)
+
+        return topics_to_create
+
+    def _create_config_data(self, device, state_topic, extra):
+        config_data = {}
+        config_data['device'] = {}
+        config_data['unique_id'] = ('{}_telldus_{}'
+                                    .format(device.id, extra['type']))
+
+        if hasattr(device, 'name') and device.name != {}:
+            config_data['name'] = device.name
+            config_data['device']['name'] = device.name
+        else:
+            config_data['name'] = ('telldus_{}_{}'.format(
+                device.id, extra['type']))
+            config_data['device']['name'] = '{}_{}'.format(
+                device.id, device.model)
+
+        config_data['state_topic'] = state_topic
+        config_data['value_template'] = '{{ value_json.%s }}' % extra['type']
+        config_data['device']['identifiers'] = []
+        config_data['device']['identifiers'].append('{}_{}'.format(
+            device.id, device.model))
+        config_data['device']['model'] = device.model
+        config_data['device']['manufacturer'] = device.protocol
+
+        # if unit is set assume sensor
+        if 'unit' in extra:
+            config_data['device_class'] = extra['type']
+            config_data['unit_of_measurement'] = extra['unit']
+            config_data['expire_after'] = 60 * 60 * 4
+            config_data['force_update'] = True
+
+        return config_data
+
     def _find_sensor(self, sensor_id):
         for sensor in self.core.sensors():
             if int(sensor.id) == int(sensor_id):
@@ -306,6 +246,94 @@ class Device(Telldus):
             devices_data.append(dict(device_data))
 
         return devices_data
+
+    def create_topics(self, data):
+        config_topic = self.config['home_assistant']['config_topic']
+        topics_to_create = []
+
+        # pylint: disable=invalid-name
+        for d in data:
+            topics = {}
+            topics['config'] = {}
+            topics['state'] = {}
+            if 'device' in d:
+                topics['config']['topic'] = ('{}/{}/{}_telldus/{}/config'
+                                             .format(
+                                                 config_topic, d['type'],
+                                                 d['device'].id, d['type']))
+                topics['state']['topic'] = '{}/{}/{}/state'.format(
+                    self.config['home_assistant']['state_topic'],
+                    d['device'].id, d['type'])
+                topics['command'] = {}
+                topics['command']['topic'] = '{}/{}/{}/set'.format(
+                    self.config['home_assistant']['state_topic'],
+                    d['device'].id, d['type'])
+                topics['brightness'] = {}
+                topics['brightness']['command'] = '{}/{}/{}/set'.format(
+                    self.config['home_assistant']['state_topic'],
+                    d['device'].id, 'brightness')
+                topics['brightness']['state'] = '{}/{}/{}/dim'.format(
+                    self.config['home_assistant']['state_topic'],
+                    d['device'].id, 'brightness')
+                config_data = self._create_config_data(
+                    d['device'], topics['state']['topic'], d,
+                    topics['command']['topic'], topics['brightness'])
+
+            topics['config']['data'] = json.dumps(
+                config_data, ensure_ascii=False)
+            topics['state']['data'] = json.dumps(
+                d['state_data'], ensure_ascii=False)
+            topics_to_create.append(topics)
+
+        return topics_to_create
+
+    def _create_config_data(self, device, state_topic, extra,
+                            command_topic=None, bt_command=None):
+        # common
+        config_data = {}
+        config_data['device'] = {}
+        config_data['unique_id'] = ('{}_telldus_{}'
+                                    .format(device.id, extra['type']))
+
+        if hasattr(device, 'name') and device.name != {}:
+            config_data['name'] = device.name
+            config_data['device']['name'] = device.name
+        else:
+            config_data['name'] = ('telldus_{}_{}'.format(
+                device.id, extra['type']))
+            config_data['device']['name'] = '{}_{}'.format(
+                device.id, device.model)
+
+        if extra['type'] == 'light':
+            bt_value_template = '{{ value_json.%s }}' % 'brightness'
+            config_data['brightness_state_topic'] = bt_command['state']
+            config_data['brightness_value_template'] = bt_value_template
+            config_data['brightness_command_topic'] = bt_command['command']
+
+        config_data['state_topic'] = state_topic
+        config_data['value_template'] = '{{ value_json.%s }}' % extra['type']
+        config_data['device']['identifiers'] = []
+        config_data['device']['identifiers'].append('{}_{}'.format(
+            device.id, device.model))
+        config_data['device']['model'] = device.model
+        config_data['device']['manufacturer'] = device.protocol
+
+        # device only
+        # if command_topic exists assume device
+        if command_topic is not None:
+            config_data['command_topic'] = command_topic
+            if extra['type'] != 'light':
+                config_data['state_on'] = const.TELLSTICK_TURNON
+                config_data['state_off'] = const.TELLSTICK_TURNOFF
+            if extra['type'] == 'light':
+                config_data['on_command_type'] = 'brightness'
+                config_data['payload_on'] = const.TELLSTICK_TURNON
+                config_data['payload_off'] = const.TELLSTICK_TURNOFF
+            else:
+                config_data['payload_on'] = const.TELLSTICK_TURNON
+                config_data['payload_off'] = const.TELLSTICK_TURNOFF
+
+        return config_data
 
     def turn_on(self, device_id):
         with THREADING_RLOCK:
@@ -357,7 +385,10 @@ class Command(Telldus):
         state_data = {}
         sdata = self.serialize(raw_data)
 
-        # Assume all raw "command" comming from raw are binary_sensors
+        if not sdata:
+            return [sdata]
+
+        # Assume all raw "command"s comming from raw are binary_sensors
         device_model = 'binary_sensor'
         state_data[device_model] = sdata['method']
         command_data['type'] = device_model
@@ -368,10 +399,10 @@ class Command(Telldus):
         return self.command
 
     def serialize(self, raw_data):
-        raw = {}
-
         if 'command' not in raw_data:
             return {}
+
+        raw = {}
 
         for d in raw_data.split(';'):
             _d = d.split(':')
@@ -392,3 +423,66 @@ class Command(Telldus):
 
         self.serialized = raw
         return self.serialized
+
+    def create_topics(self, data):
+        config_topic = self.config['home_assistant']['config_topic']
+        topics_to_create = []
+
+        # pylint: disable=invalid-name
+        for d in data:
+            config_data = {}
+            topics = {}
+            topics['config'] = {}
+            topics['state'] = {}
+            if 'command' in d:
+                topics['config']['topic'] = ('{}/{}/{}_telldus/{}/config'
+                                             .format(
+                                                 config_topic, d['type'],
+                                                 d['command'].id, d['type']))
+                topics['state']['topic'] = '{}/{}/{}/state'.format(
+                    self.config['home_assistant']['state_topic'],
+                    d['command'].id, d['type'])
+                config_data = self._create_config_data(
+                    d['command'], topics['state']['topic'], d)
+
+            topics['config']['data'] = json.dumps(
+                config_data, ensure_ascii=False)
+            topics['state']['data'] = json.dumps(
+                d['state_data'], ensure_ascii=False)
+            topics_to_create.append(topics)
+
+        return topics_to_create
+
+    def _create_config_data(self, device, state_topic, extra):
+        config_data = {}
+        config_data['device'] = {}
+        config_data['unique_id'] = ('{}_telldus_{}'
+                                    .format(device.id, extra['type']))
+
+        if hasattr(device, 'name') and device.name != {}:
+            config_data['name'] = device.name
+            config_data['device']['name'] = device.name
+        else:
+            config_data['name'] = ('telldus_{}_{}'.format(
+                device.id, extra['type']))
+            config_data['device']['name'] = '{}_{}'.format(
+                device.id, device.model)
+
+        config_data['state_topic'] = state_topic
+        config_data['value_template'] = '{{ value_json.%s }}' % extra['type']
+        config_data['device']['identifiers'] = []
+        config_data['device']['identifiers'].append('{}_{}'.format(
+            device.id, device.model))
+        config_data['device']['model'] = device.model
+        config_data['device']['manufacturer'] = device.protocol
+
+        # if command exists assume binary_sensor
+        if 'command' in extra:
+            # https://www.home-assistant.io/integrations/binary_sensor/#device-class
+            # config_data['device_class'] = "None"
+            config_data['payload_on'] = const.TELLSTICK_TURNON
+            config_data['payload_off'] = const.TELLSTICK_TURNOFF
+            config_data['expire_after'] = 60 * 60 * 24
+            config_data['force_update'] = True
+
+        return config_data

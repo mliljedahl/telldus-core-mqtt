@@ -73,13 +73,23 @@ def subscribe_device(client: mqtt_client):
         module = msg.topic.split('/')[2]
         cmd_status = False
 
+        payload = int(msg.payload.decode())
+
+        logging.debug('[DEBUG] payload: "%s"', payload)
+        logging.debug('[DEBUG] device_id: "%s"', device_id)
+        logging.debug('[DEBUG] module: "%s"', module)
+
         if module == 'brightness':
+            topic = d.create_topic(device_id, 'light')
+            topic_data = d.create_topic_data('light', payload)
+            publish_mqtt(mqtt_device, topic, topic_data)
+
             logging.debug('[DEVICE] Sending command DIM "%s" to device '
-                          'id %s', int(msg.payload.decode()), device_id)
-            cmd_status = d.dim(device_id, int(msg.payload.decode()))
+                          'id %s', payload, device_id)
+            cmd_status = d.dim(device_id, payload)
             return
 
-        if int(msg.payload.decode()) == int(const.TELLSTICK_TURNON):
+        if payload == int(const.TELLSTICK_TURNON):
             topic = d.create_topic(device_id, 'switch')
             topic_data = d.create_topic_data('switch', const.TELLSTICK_TURNON)
             publish_mqtt(mqtt_device, topic, topic_data)
@@ -89,7 +99,7 @@ def subscribe_device(client: mqtt_client):
             cmd_status = d.turn_on(device_id)
             return
 
-        if int(msg.payload.decode()) == int(const.TELLSTICK_TURNOFF):
+        if payload == int(const.TELLSTICK_TURNOFF):
             topic = d.create_topic(device_id, 'switch')
             topic_data = d.create_topic_data('switch', const.TELLSTICK_TURNOFF)
             publish_mqtt(mqtt_device, topic, topic_data)

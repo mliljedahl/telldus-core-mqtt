@@ -41,12 +41,21 @@ def connect_mqtt(config, client_id) -> mqtt_client:
         if return_code == 0:
             client.connected_flag = True
             logging.info('Connected to MQTT Broker as %s.', client_id)
+            client.subscribe('{}/+/+/set'.format(
+                config['home_assistant']['state_topic']))
         else:
             logging.critical('Failed to connect, return code %d', return_code)
+
+    def on_disconnect(client, userdata, rc):
+        if rc != 0:
+            client.connected_flag=False
+            client.disconnect_flag=True
+
 
     client = mqtt_client.Client(client_id)
     client.username_pw_set(config['mqtt']['user'], config['mqtt']['pass'])
     client.on_connect = on_connect
+    client.on_disconnect = on_disconnect
     client.connect(config['mqtt']['broker'], int(config['mqtt']['port']))
 
     return client
